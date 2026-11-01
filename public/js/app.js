@@ -1,6 +1,7 @@
 /**
  * Banking Management System - Master Application Orchestrator
  * Coordinates Navigation, Dashboard Metrics, Modal Dialogs, and Toasts.
+ * Communicates with backend via window.BankingApi.
  */
 
 (function (window) {
@@ -10,7 +11,6 @@
     init() {
       this.bindNavigation();
       this.bindClock();
-      this.bindStoreUpdates();
       this.bindGlobalActions();
       this.initModalListeners();
 
@@ -101,6 +101,19 @@
       }
     },
 
+    async refreshSystemData(showToast = true) {
+      await this.renderDashboard();
+      if (window.CustomerView) await window.CustomerView.render();
+      if (window.AccountView) await window.AccountView.render();
+      if (window.TransactionView) {
+        await window.TransactionView.populateAccountSelects();
+        await window.TransactionView.renderHistory();
+      }
+      if (showToast) {
+        this.toast('System Synchronized', 'All views and metrics refreshed from the live database.', 'info');
+      }
+    },
+
     bindClock() {
       const clockElem = document.getElementById('live-clock');
       if (!clockElem) return;
@@ -124,104 +137,106 @@
       setInterval(update, 1000);
     },
 
-    bindStoreUpdates() {
-      window.addEventListener('bank-store-updated', () => {
-        // Automatically sync whichever view is currently active + refresh dashboard widgets
-        this.renderDashboard();
-        if (window.CustomerView) window.CustomerView.render();
-        if (window.AccountView) window.AccountView.render();
-        if (window.TransactionView) {
-          window.TransactionView.populateAccountSelects();
-          window.TransactionView.renderHistory();
-        }
-      });
-    },
-
     bindGlobalActions() {
-      const resetBtn = document.getElementById('btn-reset-demo-data');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          this.confirm(
-            'Reset Demo Database?',
-            'This will clear all custom edits and restore original seed records for customers, accounts, and transactions.',
-            () => {
-              window.BankingStore.resetToDefaults();
-              this.toast('Database Reset', 'Sample relational state restored successfully.', 'info');
-            }
-          );
+      const refreshBtn = document.getElementById('btn-refresh-data') || document.getElementById('btn-reset-demo-data');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          this.refreshSystemData(true);
         });
       }
     },
 
-    renderDashboard() {
-      if (!window.BankingStore) return;
-      const metrics = window.BankingStore.getDashboardMetrics();
+    async renderDashboard() {
+      if (!window.BankingApi) return;
 
-      // KPI Metric Cards
       const kpiCust = document.getElementById('kpi-total-customers');
       const kpiAcc = document.getElementById('kpi-total-accounts');
       const kpiBal = document.getElementById('kpi-total-balance');
       const kpiTxn = document.getElementById('kpi-total-transactions');
-
-      if (kpiCust) kpiCust.textContent = metrics.totalCustomers;
-      if (kpiAcc) kpiAcc.textContent = metrics.totalAccounts;
-      if (kpiBal) {
-        kpiBal.textContent = `₹${metrics.totalBalance.toLocaleString('en-IN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        })}`;
-      }
-      if (kpiTxn) kpiTxn.textContent = metrics.totalTransactions;
-
       const accSubtext = document.getElementById('kpi-accounts-subtext');
-      if (accSubtext) {
-        accSubtext.textContent = `${metrics.activeAccounts} Active • ${metrics.closedAccounts} Closed`;
-      }
-
-      // Recent Activity Table on Dashboard
       const recentTbody = document.getElementById('dashboard-recent-activity-tbody');
-      if (recentTbody) {
-        if (!metrics.recentActivity || metrics.recentActivity.length === 0) {
-          recentTbody.innerHTML = `
-            <tr>
-              <td colspan="5" class="empty-table-state" style="padding: 24px;">
-                No recent activity recorded.
-              </td>
-            </tr>
-          `;
-        } else {
-          recentTbody.innerHTML = metrics.recentActivity.map(item => {
-            let badgeClass = 'badge-deposit';
-            let amountClass = 'cell-amount-pos';
-            let prefix = '+';
 
-            if (item.type === 'Withdrawal') {
-              badgeClass = 'badge-withdrawal';
-              amountClass = 'cell-amount-neg';
-              prefix = '-';
-            } else if (item.type === 'Transfer') {
-              badgeClass = 'badge-transfer';
-              amountClass = 'cell-amount-neutral';
-              prefix = '⇄ ';
-            }
+      try {
+        const stats = await window.BankingApi.getDashboardStats();
 
-            const dt = new Date(item.date);
-            const dateFmt = dt.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-            const timeFmt = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        if (kpiCust) kpiCust.textContent = stats.total_customers || 0;
+        if (kpiAcc) kpiAcc.textContent = stats.total_accounts || 0;
+        if (kpiBal) {
+          const bal = parseFloat(stats.total_balance || 0);
+          kpiBal.textContent = `₹${bal.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}`;
+        }
 
-            return `
+        const recentList = stats.recent_transactions || [];
+        if (kpiTxn) {
+          kpiTxn.textContent = recentList.length > 0 ? `${recentList.length}+` : '0';
+        }
+
+        if (accSubtext) {
+          accSubtext.textContent = 'Active & Closed Portfolio';
+        }
+
+        // Recent Activity Table on Dashboard
+        if (recentTbody) {
+          if (recentList.length === 0) {
+            recentTbody.innerHTML = `
               <tr>
-                <td class="cell-mono cell-strong">${item.id}</td>
-                <td><span class="badge ${badgeClass}">${item.type}</span></td>
-                <td class="cell-mono">${item.accountNumber}</td>
-                <td class="${amountClass}">${prefix}₹${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                <td>
-                  <div>${dateFmt}</div>
-                  <div class="cell-muted cell-mono">${timeFmt}</div>
+                <td colspan="5" class="empty-table-state" style="padding: 24px;">
+                  No recent activity recorded in database.
                 </td>
               </tr>
             `;
-          }).join('');
+          } else {
+            recentTbody.innerHTML = recentList.map(item => {
+              let badgeClass = 'badge-deposit';
+              let amountClass = 'cell-amount-pos';
+              let prefix = '+';
+
+              if (item.type === 'Withdrawal') {
+                badgeClass = 'badge-withdrawal';
+                amountClass = 'cell-amount-neg';
+                prefix = '-';
+              } else if (item.type === 'Transfer') {
+                badgeClass = 'badge-transfer';
+                amountClass = 'cell-amount-neutral';
+                prefix = '⇄ ';
+              }
+
+              const rawDate = item.timestamp || item.transaction_date || item.transfer_date;
+              const dt = rawDate ? new Date(rawDate) : new Date();
+              const dateFmt = dt.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+              const timeFmt = dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+              const refPrefix = item.record_type === 'Transfer' || item.type === 'Transfer' ? 'TRF' : 'TXN';
+              const amt = parseFloat(item.amount || 0);
+
+              return `
+                <tr>
+                  <td class="cell-mono cell-strong">#${refPrefix}-${item.id}</td>
+                  <td><span class="badge ${badgeClass}">${item.type}</span></td>
+                  <td class="cell-mono">${this.escape(item.account_number || item.account_info || 'N/A')}</td>
+                  <td class="${amountClass}">${prefix}₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td>
+                    <div>${dateFmt}</div>
+                    <div class="cell-muted cell-mono">${timeFmt}</div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('Dashboard data fetch warning:', err.message);
+        if (recentTbody) {
+          recentTbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="empty-table-state" style="padding: 24px; color: var(--amber-600);">
+                Database offline or initializing. Start MySQL to view live analytics.
+              </td>
+            </tr>
+          `;
         }
       }
     },
@@ -289,8 +304,8 @@
             </svg>
           </div>
           <div>
-            <h4 style="font-weight: 700; color: var(--slate-900); margin-bottom: 6px;">${title}</h4>
-            <p style="color: var(--slate-600); font-size: 0.92rem; line-height: 1.5;">${message}</p>
+            <h4 style="font-weight: 700; color: var(--slate-900); margin-bottom: 6px;">${this.escape(title)}</h4>
+            <p style="color: var(--slate-600); font-size: 0.92rem; line-height: 1.5;">${this.escape(message)}</p>
           </div>
         </div>
       `;
@@ -335,8 +350,8 @@
       toast.innerHTML = `
         <div class="toast-icon">${iconSvg}</div>
         <div class="toast-content">
-          <div class="toast-title">${title}</div>
-          <div class="toast-message">${message}</div>
+          <div class="toast-title">${this.escape(title)}</div>
+          <div class="toast-message">${this.escape(message)}</div>
         </div>
         <button class="toast-close" title="Dismiss">&times;</button>
       `;
@@ -351,6 +366,16 @@
 
       container.appendChild(toast);
       setTimeout(removeToast, 3800);
+    },
+
+    escape(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
   };
 
