@@ -68,7 +68,7 @@ D:\DBMS project\
 | **Phase 2** | MySQL Schema & Seed Data (`schema.sql`, `seed.sql`) | Dedicated Sub-Chat (Chat 2) | **DONE** | 02 Nov 2026 |
 | **Phase 3** | Express Skeleton, Connection Pool & REST CRUD APIs | Dedicated Sub-Chat (Chat 2) | **DONE** | 02 Nov 2026 |
 | **Phase 4** | Frontend-to-Backend Integration & Live API Wiring | Dedicated Sub-Chat (Chat 2) | **DONE** | 02 Nov 2026 |
-| **Phase 5** | End-to-End Testing (Rollback Safety, Edge Cases, Verification) | Dedicated Sub-Chat (Chat 2) | **NOT STARTED** | 02 Nov 2026 |
+| **Phase 5** | End-to-End Testing (Rollback Safety, Edge Cases, Verification) | Dedicated Sub-Chat (Chat 2) | **DONE** | 02 Nov 2026 |
 
 ---
 

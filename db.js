@@ -32,7 +32,7 @@ async function testConnection() {
   }
 }
 
-// Support both direct pool export and destructuring
+// Attach testConnection to pool for clean destructuring support
+pool.testConnection = testConnection;
+
 module.exports = pool;
-module.exports.pool = pool;
-module.exports.testConnection = testConnection;
