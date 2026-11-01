@@ -65,8 +65,8 @@ D:\DBMS project\
 |---|---|---|---|---|
 | **Phase 0** | Workspace & Tracker Initialization | Master Chat | **DONE** | 28 Oct 2026 |
 | **Phase 1 (UI-First)** | Frontend Prototype & Mock UI (Dashboard, Customers, Accounts, Transactions) | Dedicated Sub-Chat (Chat 1) | **DONE** | 28 Oct 2026 |
-| **Phase 2** | MySQL Schema, Constraints, Seeds & ER/3NF Documentation | Dedicated Sub-Chat (Chat 2) | **NOT STARTED** | 29 Oct 2026 |
-| **Phase 3** | Express Skeleton, Connection Pool & REST CRUD APIs | Dedicated Sub-Chat (Chat 3) | **NOT STARTED** | 30 Oct 2026 |
+| **Phase 2** | MySQL Schema & Seed Data (`schema.sql`, `seed.sql`) | Dedicated Sub-Chat (Chat 2) | **DONE** | 02 Nov 2026 |
+| **Phase 3** | Express Skeleton, Connection Pool & REST CRUD APIs | Dedicated Sub-Chat (Chat 2) | **IN PROGRESS** | 02 Nov 2026 |
 | **Phase 4** | Frontend-to-Backend Integration & Live API Wiring | Dedicated Sub-Chat (Chat 4) | **NOT STARTED** | 31 Oct 2026 |
 | **Phase 5** | End-to-End Testing (Rollback Safety, Edge Cases) | Dedicated Sub-Chat (Chat 5) | **NOT STARTED** | 31 Oct 2026 |
 | **Phase 6** | Documentation, Viva Prep & Final Review | Master Chat | **NOT STARTED** | 01 Nov 2026 |
@@ -96,6 +96,7 @@ D:\DBMS project\
 - **Dependency Deletion Rules:** Restrictive FK constraints (`ON DELETE RESTRICT`) to prevent accidental deletion of customers or accounts with active history.
 - **Account Types Restriction (Logged 28 Oct 2026):** Scope strictly limited to `Savings` and `Current`. Enforced via SQL check constraint `CHECK (account_type IN ('Savings', 'Current'))`. Business accounts or multi-user joint accounts are omitted to keep the academic demonstration focused and reliable.
 - **Account Lifecycle & Soft Delete (Logged 2 Nov 2026):** Accounts strictly use soft deletion (`status` restricted to `'Active'` and `'Closed'`). The `'Frozen'` state is eliminated. Accounts with ₹0 balance transition to `'Closed'` without hard-deleting the row, ensuring historical audit trails in `BankTransaction` and `Transfer` remain referentially intact under foreign key constraints.
+- **Team Work Distribution (Logged 2 Nov 2026):** Phase 2 scope for this system is focused strictly on the production SQL scripts (`database/schema.sql` and `database/seed.sql`). Queries demonstration script (`database/queries.sql`) and academic reports (`docs/ER-diagram.md`, `docs/normalization.md`) are delegated to teammate's deliverable scope.
 - **Phase 1 UI-First Prototype (Completed 28 Oct 2026):** Implemented standalone, zero-dependency browser prototype under `public/` (`index.html`, `css/styles.css`, `js/mockData.js`, `js/customers.js`, `js/accounts.js`, `js/transactions.js`, `js/app.js`). Simulates full relational business rules and constraints directly in client state with real-time DOM synchronization and toast notifications. Verified headlessly and in default browser.
 
 ---
