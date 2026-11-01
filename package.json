@@ -1,0 +1,23 @@
+{
+  "name": "banking-management-system",
+  "version": "1.0.0",
+  "description": "College DBMS Laboratory Project - Banking Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "dbms",
+    "banking",
+    "mysql",
+    "express"
+  ],
+  "author": "Japjit Singh",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}
